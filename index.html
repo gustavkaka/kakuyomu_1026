@@ -308,9 +308,11 @@
     }
 
     .drawer-body {
-      padding: 20px 16px;
+      padding: 20px 16px 40px;
       flex: 1;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
 
     .drawer-section-title {
@@ -325,6 +327,37 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    /* 隠し設定エリア（ドロワー最下部） */
+    .drawer-footer-settings {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px dashed var(--card-border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-export {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      color: var(--text-sub);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    .btn-export:active {
+      transform: scale(0.97);
+      background: rgba(255, 255, 255, 0.08);
     }
 
     /* タグチップ */
@@ -546,6 +579,14 @@
     <div class="drawer-body">
       <div class="drawer-section-title">タグ一覧（件数順）</div>
       <div class="drawer-tag-grid" id="drawerTagGrid"></div>
+
+      <!-- 最下部の隠しバックアップ機能 -->
+      <div class="drawer-footer-settings">
+        <button class="btn-export" id="exportJsonBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          データバックアップ（JSONエクスポート）
+        </button>
+      </div>
     </div>
   </div>
 
@@ -714,6 +755,7 @@
     const closeTagDrawerBtn = document.getElementById('closeTagDrawerBtn');
     const tagDrawer = document.getElementById('tagDrawer');
     const drawerTagGrid = document.getElementById('drawerTagGrid');
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
 
     const activeTagBadge = document.getElementById('activeTagBadge');
     const activeTagName = document.getElementById('activeTagName');
@@ -776,6 +818,28 @@
         drawerTagGrid.appendChild(chip);
       });
     }
+
+    // JSONエクスポート機能
+    exportJsonBtn.addEventListener('click', async () => {
+      const novels = await getAllNovels();
+      if (novels.length === 0) {
+        alert('バックアップする作品がありません');
+        return;
+      }
+
+      const jsonStr = JSON.stringify(novels, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const today = new Date().toISOString().split('T')[0];
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `my_novels_backup_${today}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
 
     function updateTagBadge() {
       if (currentTagFilter) {
