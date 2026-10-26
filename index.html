@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>マイ・カクヨム</title>
+  
+  <!-- PWA Manifest & Theme Color -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B0B0C">
+
+  <style>
+    :root {
+      --bg-color: #0B0B0C;
+      --card-bg: rgba(22, 22, 26, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-color: #e5a93c;
+      --danger-color: #ff4d4f;
+      --text-main: #f0f0f2;
+      --text-sub: #a0a0ab;
+      --text-muted: #52525e;
+      --nav-height: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    input, textarea, .reader-content, .novel-title, .novel-snippet {
+      user-select: text;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      padding-bottom: calc(var(--nav-height) + 20px);
+      overflow-x: hidden;
+    }
+
+    /* 上部ヘッダー */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(11, 11, 12, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: #fff;
+    }
+
+    .active-tag-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      background: rgba(229, 169, 60, 0.15);
+      border: 1px solid var(--accent-color);
+      color: var(--accent-color);
+      padding: 2px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, background-color 0.2s ease;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px;
+      width: 100%;
+    }
+
+    /* 作品カード */
+    .novel-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .novel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px;
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.2s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .novel-card:active {
+      transform: scale(0.98);
+      background: rgba(30, 30, 36, 0.9);
+    }
+
+    .novel-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #fff;
+      line-height: 1.35;
+    }
+
+    .novel-snippet {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      line-height: 1.5;
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .card-tag {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      margin-bottom: 12px;
+      opacity: 0.3;
+    }
+
+    .empty-state p {
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    /* 下部ナビゲーション */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-height);
+      background: rgba(15, 15, 18, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 40;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      font-weight: 500;
+      cursor: pointer;
+      width: 50%;
+      height: 100%;
+      transition: color 0.2s ease, transform 0.1s ease;
+    }
+
+    .nav-item:active {
+      transform: scale(0.92);
+    }
+
+    .nav-item.active {
+      color: var(--accent-color);
+    }
+
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* フルスクリーンモーダル共通 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-color);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(11, 11, 12, 0.85);
+      backdrop-filter: blur(12px);
+    }
+
+    .modal-header h2 {
+      font-size: 1.05rem;
+      color: #fff;
+    }
+
+    .btn-text {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 0.95rem;
+      cursor: pointer;
+      padding: 6px 10px;
+    }
+
+    .btn-text-primary {
+      color: var(--accent-color);
+      font-weight: 700;
+    }
+
+    .btn-text-danger {
+      color: var(--danger-color);
+      font-weight: 600;
+    }
+
+    /* タグ分類ドロワー */
+    .tag-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(11, 11, 12, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 110;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tag-drawer.active {
+      transform: translateX(0);
+    }
+
+    .drawer-body {
+      padding: 20px 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .drawer-section-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .drawer-tag-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* タグチップ */
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tag-chip:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .tag-chip .badge {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-sub);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .tag-chip.active {
+      background: rgba(229, 169, 60, 0.15);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .tag-chip.active .badge {
+      background: var(--accent-color);
+      color: #000;
+    }
+
+    /* 新規追加・編集モーダル用スタイル */
+    .modal-body {
+      padding: 20px 16px;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    input[type="text"], textarea {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+      width: 100%;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--accent-color);
+    }
+
+    .selectable-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 140px;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+
+    .new-tag-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-add-tag {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-add-tag:active {
+      transform: scale(0.95);
+    }
+
+    textarea {
+      flex: 1;
+      min-height: 220px;
+      resize: none;
+      line-height: 1.6;
+    }
+
+    .modal-footer-extra {
+      padding-top: 10px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    /* 読書画面 */
+    .reader-view {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-color);
+      z-index: 90;
+      overflow-y: auto;
+      padding: 14px 12px 80px;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reader-view.active {
+      transform: translateX(0);
+    }
+
+    .reader-header {
+      position: sticky;
+      top: -14px;
+      margin: -14px -12px 16px;
+      padding: 12px 14px;
+      background: rgba(11, 11, 12, 0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .reader-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #fff;
+      line-height: 1.35;
+    }
+
+    .reader-content {
+      line-height: 1.65;
+      font-size: 0.9rem;
+      color: #e3e2e6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      letter-spacing: 0.01em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <header>
+    <div class="header-title-group">
+      <h1>マイ・ライブラリ</h1>
+      <div id="activeTagBadge" class="active-tag-badge" style="display: none;">
+        <span id="activeTagName">#タグ</span>
+        <span style="font-size:0.9em; opacity:0.7;">✕</span>
+      </div>
+    </div>
+    <button class="icon-btn" id="openTagDrawerBtn" title="ライブラリ分類">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+    </button>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <div class="container">
+    <div id="novelGrid" class="novel-grid"></div>
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <p id="emptyText">作品が登録されていません。<br>下の「追加」タブからコピペして保存してください。</p>
+    </div>
+  </div>
+
+  <!-- ボトムナビゲーション -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="navHome">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <span>ライブラリ</span>
+    </button>
+    <button class="nav-item" id="navAdd">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>追加</span>
+    </button>
+  </nav>
+
+  <!-- タグ分類ドロワー -->
+  <div class="tag-drawer" id="tagDrawer">
+    <div class="modal-header">
+      <h2>ライブラリ分類</h2>
+      <button class="btn-text" id="closeTagDrawerBtn">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section-title">タグ一覧（件数順）</div>
+      <div class="drawer-tag-grid" id="drawerTagGrid"></div>
+    </div>
+  </div>
+
+  <!-- 新規登録・編集モーダル -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal-header">
+      <button class="btn-text" id="closeAddModalBtn">キャンセル</button>
+      <h2 id="modalHeaderTitle">新規作品</h2>
+      <button class="btn-text btn-text-primary" id="saveNovelBtn">保存</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="inputTitle">タイトル</label>
+        <input type="text" id="inputTitle" placeholder="タイトルを入力">
+      </div>
+      
+      <div class="form-group">
+        <label>タグを選択（件数順）</label>
+        <div class="selectable-tags" id="selectableTags"></div>
+        
+        <div class="new-tag-input-group" style="margin-top: 4px;">
+          <input type="text" id="inputNewTag" placeholder="新しいタグを手打ちで追加">
+          <button class="btn-add-tag" id="addNewTagBtn">＋追加</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
+        <label for="inputBody">本文</label>
+        <textarea id="inputBody" placeholder="AIの生成本文をここに貼り付け"></textarea>
+      </div>
+
+      <div class="modal-footer-extra" id="deleteContainer" style="display: none;">
+        <button class="btn-text btn-text-danger" id="deleteNovelBtn">この作品を削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 読書画面ビュー -->
+  <div class="reader-view" id="readerView">
+    <div class="reader-header">
+      <button class="btn-text" id="closeReaderBtn" style="padding-left:0; color: var(--accent-color);">← ライブラリ</button>
+    </div>
+    <h1 class="reader-title" id="readerTitle"></h1>
+    <div class="card-tags" id="readerTags" style="margin-bottom: 16px;"></div>
+    <div class="reader-content" id="readerContent"></div>
+  </div>
+
+  <script>
+    const DB_NAME = 'EroNovelLibraryDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'novels';
+    let db = null;
+
+    let currentTagFilter = null;
+    let modalSelectedTags = new Set();
+    let editingNovelId = null;
+
+    // History State 管理
+    function pushState(page, extra = {}) {
+      const state = { page, ...extra };
+      history.pushState(state, '');
+      renderState(state);
+    }
+
+    function renderState(state) {
+      state = state || { page: 'home' };
+
+      tagDrawer.classList.remove('active');
+      addModal.classList.remove('active');
+      readerView.classList.remove('active');
+      navHome.classList.add('active');
+      navAdd.classList.remove('active');
+
+      if (state.page === 'tag_drawer') {
+        tagDrawer.classList.add('active');
+      } else if (state.page === 'add_modal') {
+        addModal.classList.add('active');
+        if (!editingNovelId) {
+          navAdd.classList.add('active');
+          navHome.classList.remove('active');
+        }
+      } else if (state.page === 'reader') {
+        readerView.classList.add('active');
+      }
+    }
+
+    window.addEventListener('popstate', (e) => {
+      renderState(e.state);
+    });
+
+    history.replaceState({ page: 'home' }, '');
+
+    // 左端フリック戻るジェスチャー
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    window.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      if (!e.changedTouches || e.changedTouches.length === 0) return;
+      const deltaX = e.changedTouches[0].clientX - touchStartX;
+      const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+
+      if (touchStartX < 35 && deltaX > 70 && deltaY < 80) {
+        if (history.state && history.state.page !== 'home') {
+          history.back();
+        }
+      }
+    }, { passive: true });
+
+    // IndexedDB
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+          }
+        };
+        request.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function getAllNovels() {
+      return new Promise((resolve) => {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+      });
+    }
+
+    function saveOrUpdateNovel(novel) {
+      return new Promise((resolve) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(novel);
+        request.onsuccess = () => resolve(request.result);
+      });
+    }
+
+    function deleteNovel(id) {
+      return new Promise((resolve) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+      });
+    }
+
+    // UI要素
+    const navHome = document.getElementById('navHome');
+    const navAdd = document.getElementById('navAdd');
+
+    const openTagDrawerBtn = document.getElementById('openTagDrawerBtn');
+    const closeTagDrawerBtn = document.getElementById('closeTagDrawerBtn');
+    const tagDrawer = document.getElementById('tagDrawer');
+    const drawerTagGrid = document.getElementById('drawerTagGrid');
+
+    const activeTagBadge = document.getElementById('activeTagBadge');
+    const activeTagName = document.getElementById('activeTagName');
+
+    const addModal = document.getElementById('addModal');
+    const modalHeaderTitle = document.getElementById('modalHeaderTitle');
+    const closeAddModalBtn = document.getElementById('closeAddModalBtn');
+    const saveNovelBtn = document.getElementById('saveNovelBtn');
+    const deleteContainer = document.getElementById('deleteContainer');
+    const deleteNovelBtn = document.getElementById('deleteNovelBtn');
+
+    const novelGrid = document.getElementById('novelGrid');
+    const emptyState = document.getElementById('emptyState');
+    const selectableTags = document.getElementById('selectableTags');
+    const inputNewTag = document.getElementById('inputNewTag');
+    const addNewTagBtn = document.getElementById('addNewTagBtn');
+
+    const readerView = document.getElementById('readerView');
+    const closeReaderBtn = document.getElementById('closeReaderBtn');
+    const readerTitle = document.getElementById('readerTitle');
+    const readerTags = document.getElementById('readerTags');
+    const readerContent = document.getElementById('readerContent');
+
+    async function getSortedTagsWithCount() {
+      const novels = await getAllNovels();
+      const tagCounts = {};
+
+      novels.forEach(novel => {
+        if (novel.tags && Array.isArray(novel.tags)) {
+          novel.tags.forEach(tag => {
+            tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+          });
+        }
+      });
+
+      return Object.entries(tagCounts)
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count);
+    }
+
+    async function renderTagDrawer() {
+      const sortedTags = await getSortedTagsWithCount();
+      drawerTagGrid.innerHTML = '';
+
+      if (sortedTags.length === 0) {
+        drawerTagGrid.innerHTML = '<span style="font-size:0.85rem; color:var(--text-muted);">まだタグがありません。</span>';
+        return;
+      }
+
+      sortedTags.forEach(({ tag, count }) => {
+        const chip = document.createElement('div');
+        chip.className = `tag-chip ${currentTagFilter === tag ? 'active' : ''}`;
+        chip.innerHTML = `${escapeHtml(tag)} <span class="badge">${count}</span>`;
+        chip.addEventListener('click', () => {
+          currentTagFilter = tag;
+          updateTagBadge();
+          loadNovels();
+          history.back();
+        });
+        drawerTagGrid.appendChild(chip);
+      });
+    }
+
+    function updateTagBadge() {
+      if (currentTagFilter) {
+        activeTagName.textContent = `#${currentTagFilter}`;
+        activeTagBadge.style.display = 'inline-flex';
+      } else {
+        activeTagBadge.style.display = 'none';
+      }
+    }
+
+    activeTagBadge.addEventListener('click', () => {
+      currentTagFilter = null;
+      updateTagBadge();
+      loadNovels();
+    });
+
+    openTagDrawerBtn.addEventListener('click', () => {
+      renderTagDrawer();
+      pushState('tag_drawer');
+    });
+
+    closeTagDrawerBtn.addEventListener('click', () => {
+      history.back();
+    });
+
+    async function renderSelectableTags() {
+      const sortedTags = await getSortedTagsWithCount();
+      selectableTags.innerHTML = '';
+
+      if (sortedTags.length === 0 && modalSelectedTags.size === 0) {
+        selectableTags.innerHTML = '<span style="font-size:0.75rem; color:var(--text-muted);">まだタグがありません。</span>';
+        return;
+      }
+
+      const tagMap = new Map();
+      sortedTags.forEach(t => tagMap.set(t.tag, t.count));
+      modalSelectedTags.forEach(tag => {
+        if (!tagMap.has(tag)) tagMap.set(tag, 0);
+      });
+
+      tagMap.forEach((count, tag) => {
+        const isSelected = modalSelectedTags.has(tag);
+        const chip = document.createElement('div');
+        chip.className = `tag-chip ${isSelected ? 'active' : ''}`;
+        chip.innerHTML = `${escapeHtml(tag)} ${count > 0 ? `<span class="badge">${count}</span>` : ''}`;
+        chip.addEventListener('click', () => {
+          if (modalSelectedTags.has(tag)) {
+            modalSelectedTags.delete(tag);
+          } else {
+            modalSelectedTags.add(tag);
+          }
+          renderSelectableTags();
+        });
+        selectableTags.appendChild(chip);
+      });
+    }
+
+    addNewTagBtn.addEventListener('click', () => {
+      const newTag = inputNewTag.value.trim();
+      if (newTag) {
+        modalSelectedTags.add(newTag);
+        inputNewTag.value = '';
+        renderSelectableTags();
+      }
+    });
+
+    // 新規追加モーダル呼び出し
+    navAdd.addEventListener('click', () => {
+      editingNovelId = null;
+      modalHeaderTitle.textContent = '新規作品';
+      deleteContainer.style.display = 'none';
+      modalSelectedTags.clear();
+      document.getElementById('inputTitle').value = '';
+      inputNewTag.value = '';
+      document.getElementById('inputBody').value = '';
+      renderSelectableTags();
+      pushState('add_modal');
+    });
+
+    // 編集モーダル呼び出し（長押し時）
+    async function openEditModal(novel) {
+      editingNovelId = novel.id;
+      modalHeaderTitle.textContent = '作品の編集';
+      deleteContainer.style.display = 'flex';
+      modalSelectedTags = new Set(novel.tags || []);
+      document.getElementById('inputTitle').value = novel.title;
+      inputNewTag.value = '';
+      document.getElementById('inputBody').value = novel.body;
+      await renderSelectableTags();
+      pushState('add_modal');
+    }
+
+    closeAddModalBtn.addEventListener('click', () => {
+      history.back();
+    });
+
+    navHome.addEventListener('click', () => {
+      if (history.state && history.state.page !== 'home') {
+        history.back();
+      }
+    });
+
+    // 保存（新規・更新共通）
+    saveNovelBtn.addEventListener('click', async () => {
+      const title = document.getElementById('inputTitle').value.trim() || '無題の作品';
+      const body = document.getElementById('inputBody').value.trim();
+
+      if (!body) {
+        alert('本文を入力してください');
+        return;
+      }
+
+      const tags = Array.from(modalSelectedTags);
+
+      const novelData = {
+        title,
+        tags,
+        body,
+        createdAt: new Date().toISOString()
+      };
+
+      if (editingNovelId) {
+        novelData.id = editingNovelId;
+      }
+
+      await saveOrUpdateNovel(novelData);
+      history.back();
+      loadNovels();
+    });
+
+    // 削除処理
+    deleteNovelBtn.addEventListener('click', async () => {
+      if (!editingNovelId) return;
+      if (confirm('この作品を削除してもよろしいですか？')) {
+        await deleteNovel(editingNovelId);
+        history.back();
+        loadNovels();
+      }
+    });
+
+    // 一覧読み込み（長押し検出付き）
+    async function loadNovels() {
+      const novels = await getAllNovels();
+      novelGrid.innerHTML = '';
+
+      let filteredNovels = novels;
+      if (currentTagFilter) {
+        filteredNovels = novels.filter(n => n.tags && n.tags.includes(currentTagFilter));
+      }
+
+      if (filteredNovels.length === 0) {
+        emptyState.style.display = 'block';
+        document.getElementById('emptyText').innerHTML = currentTagFilter 
+          ? `「#${escapeHtml(currentTagFilter)}」の作品はありません。`
+          : '作品が登録されていません。<br>下の「追加」タブからコピペして保存してください。';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      filteredNovels.reverse().forEach(novel => {
+        const card = document.createElement('div');
+        card.className = 'novel-card';
+        card.innerHTML = `
+          <div class="novel-title">${escapeHtml(novel.title)}</div>
+          <div class="novel-snippet">${escapeHtml(novel.body)}</div>
+          <div class="card-tags">
+            ${(novel.tags || []).map(tag => `<span class="card-tag">#${escapeHtml(tag)}</span>`).join('')}
+          </div>
+        `;
+
+        // 長押し（ロングプレス）判定ロジック
+        let pressTimer = null;
+        let isLongPress = false;
+
+        const startPress = () => {
+          isLongPress = false;
+          pressTimer = setTimeout(() => {
+            isLongPress = true;
+            if (navigator.vibrate) navigator.vibrate(40);
+            openEditModal(novel);
+          }, 500);
+        };
+
+        const cancelPress = () => {
+          if (pressTimer) clearTimeout(pressTimer);
+        };
+
+        card.addEventListener('touchstart', startPress, { passive: true });
+        card.addEventListener('touchend', cancelPress, { passive: true });
+        card.addEventListener('touchmove', cancelPress, { passive: true });
+        card.addEventListener('mousedown', startPress);
+        card.addEventListener('mouseup', cancelPress);
+        card.addEventListener('mouseleave', cancelPress);
+
+        card.addEventListener('click', (e) => {
+          if (isLongPress) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+          openReader(novel);
+        });
+
+        novelGrid.appendChild(card);
+      });
+    }
+
+    function openReader(novel) {
+      readerTitle.textContent = novel.title;
+      readerTags.innerHTML = (novel.tags || []).map(tag => `<span class="card-tag">#${escapeHtml(tag)}</span>`).join('');
+      readerContent.textContent = novel.body;
+      pushState('reader', { novelId: novel.id });
+    }
+
+    closeReaderBtn.addEventListener('click', () => {
+      history.back();
+    });
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initDB();
+      loadNovels();
+
+      // Service Worker 登録
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    });
+  </script>
+</body>
+</html>
